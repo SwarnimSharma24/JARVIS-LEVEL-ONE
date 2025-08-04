@@ -116,7 +116,8 @@ const LoginPage = () => {
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
       >
-        {/* Logo/Header */}
+
+        {/* Logo/Header done */}
         <div className="flex flex-col items-center mb-10">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center mb-4">
             <svg
