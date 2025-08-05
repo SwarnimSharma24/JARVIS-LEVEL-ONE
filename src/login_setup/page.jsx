@@ -40,7 +40,7 @@ const LoginPage = () => {
       navigate("/home");
       dispatch(clearLoginData());
     }
-  }, [successStatus]);
+  }, [successStatus, navigate, dispatch]);
 
   // Particle animation effect
   useEffect(() => {
@@ -181,12 +181,12 @@ const LoginPage = () => {
 
         {/* Footer links */}
         <div className="mt-8 text-center text-sm text-gray-400">
-          <a href="#" className="hover:text-purple-400 transition-colors">
+          <a href="/pass" className="hover:text-purple-400 transition-colors">
             Forgot password?
           </a>
           <span className="mx-2">•</span>
           <a
-            href="#"
+            href="/password"
             className="hover:text-purple-400 transition-colors"
             onClick={() => navigate("/register")}
           >

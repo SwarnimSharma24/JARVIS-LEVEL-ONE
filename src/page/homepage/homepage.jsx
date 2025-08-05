@@ -9,29 +9,97 @@ const HomePage = () => {
   const recognitionRef = useRef(null);
 
   // Initialize speech recognition
+  // useEffect(() => {
+  //   // Check if browser supports the Web Speech API
+  //   if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+  //     console.warn("Speech recognition not supported in this browser");
+  //     return;
+  //   }
+
+  //   // Create speech recognition instance
+  //   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  //   recognitionRef.current = new SpeechRecognition();
+  //   recognitionRef.current.continuous = true;
+  //   recognitionRef.current.interimResults = true;
+  //   recognitionRef.current.lang = 'en-US';
+
+  //   // Event handlers
+  //   recognitionRef.current.onstart = () => {
+  //     setIsListening(true);
+  //     setJarvisText("Listening...");
+  //   };
+
+  //   recognitionRef.current.onresult = (event) => {
+  //     let interimTranscript = '';
+  //     let finalTranscript = '';
+
+  //     for (let i = event.resultIndex; i < event.results.length; i++) {
+  //       const transcript = event.results[i][0].transcript;
+  //       if (event.results[i].isFinal) {
+  //         finalTranscript += transcript;
+  //       } else {
+  //         interimTranscript += transcript;
+  //       }
+  //     }
+
+  //     setRecognizedText(finalTranscript || interimTranscript);
+
+  //     // Update JARVIS text with what we heard
+  //     if (finalTranscript) {
+  //       setJarvisText(finalTranscript);
+  //     }
+  //   };
+
+  //   recognitionRef.current.onerror = (event) => {
+  //     console.error("Speech recognition error", event.error);
+  //     setIsListening(false);
+  //     setJarvisText("Error occurred");
+  //     setTimeout(() => setJarvisText("JARVIS"), 2000);
+  //   };
+
+  //   recognitionRef.current.onend = () => {
+  //     setIsListening(false);
+  //     if (jarvisText === "Listening...") {
+  //       setJarvisText("JARVIS");
+  //     }
+  //   };
+
+  //   return () => {
+  //     if (recognitionRef.current) {
+  //       recognitionRef.current.stop();
+  //     }
+  //   };
+  // }, []);
+
   useEffect(() => {
     // Check if browser supports the Web Speech API
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    if (
+      !("webkitSpeechRecognition" in window) &&
+      !("SpeechRecognition" in window)
+    ) {
       console.warn("Speech recognition not supported in this browser");
       return;
     }
 
-    // Create speech recognition instance
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
     recognitionRef.current = new SpeechRecognition();
     recognitionRef.current.continuous = true;
     recognitionRef.current.interimResults = true;
-    recognitionRef.current.lang = 'en-US';
+    recognitionRef.current.lang = "en-US";
 
-    // Event handlers
+    // Local copy to prevent stale closure
+    let localJarvisText = jarvisText;
+
     recognitionRef.current.onstart = () => {
       setIsListening(true);
       setJarvisText("Listening...");
+      localJarvisText = "Listening...";
     };
 
     recognitionRef.current.onresult = (event) => {
-      let interimTranscript = '';
-      let finalTranscript = '';
+      let interimTranscript = "";
+      let finalTranscript = "";
 
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
@@ -42,11 +110,12 @@ const HomePage = () => {
         }
       }
 
-      setRecognizedText(finalTranscript || interimTranscript);
-      
-      // Update JARVIS text with what we heard
+      const recognized = finalTranscript || interimTranscript;
+      setRecognizedText(recognized);
+
       if (finalTranscript) {
         setJarvisText(finalTranscript);
+        localJarvisText = finalTranscript;
       }
     };
 
@@ -59,7 +128,7 @@ const HomePage = () => {
 
     recognitionRef.current.onend = () => {
       setIsListening(false);
-      if (jarvisText === "Listening...") {
+      if (localJarvisText === "Listening...") {
         setJarvisText("JARVIS");
       }
     };
@@ -69,7 +138,7 @@ const HomePage = () => {
         recognitionRef.current.stop();
       }
     };
-  }, []);
+  }, []); // keep dependency array empty
 
   // Toggle listening state
   const toggleListening = () => {
@@ -148,17 +217,25 @@ const HomePage = () => {
       <div className="absolute -right-20 -bottom-20 w-64 h-64 rounded-full bg-indigo-600 opacity-20 filter blur-3xl" />
 
       {/* Main container */}
-      <div 
+      <div
         className="cursor-pointer text-center"
         onClick={toggleListening}
         onMouseEnter={() => setIsFocused(true)}
         onMouseLeave={() => setIsFocused(false)}
       >
-        <span className={`text-green-50 text-4xl font-bold tracking-wider transition-all duration-300 ${isListening ? "text-indigo-300 animate-pulse" : ""}`}>
+        <span
+          className={`text-green-50 text-4xl font-bold tracking-wider transition-all duration-300 ${
+            isListening ? "text-indigo-300 animate-pulse" : ""
+          }`}
+        >
           {jarvisText}
         </span>
         <p className="text-gray-400 mt-2 text-sm">
-          {isListening ? "Listening... Speak now" : (isFocused ? "Click to speak" : "Click here to speak")}
+          {isListening
+            ? "Listening... Speak now"
+            : isFocused
+            ? "Click to speak"
+            : "Click here to speak"}
         </p>
         {recognizedText && (
           <div className="mt-4 p-3 bg-gray-800 rounded-lg max-w-md mx-auto">
