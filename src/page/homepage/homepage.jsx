@@ -1,78 +1,130 @@
 import React, { useEffect, useRef, useState } from "react";
 
 const HomePage = () => {
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
   const [isFocused, setIsFocused] = useState(false);
   const [jarvisText, setJarvisText] = useState("JARVIS");
   const [isListening, setIsListening] = useState(false);
   const [recognizedText, setRecognizedText] = useState("");
+  const [aiResponse, setAiResponse] = useState("");
   const particlesRef = useRef(null);
   const recognitionRef = useRef(null);
 
-  // Initialize speech recognition
-  // useEffect(() => {
-  //   // Check if browser supports the Web Speech API
-  //   if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-  //     console.warn("Speech recognition not supported in this browser");
-  //     return;
-  //   }
+  // Fetch answer from backend
+  const personalInfo = {
+    name: "Jarvis",
+    creator: "Swarnim Sharma",
+    location: "Faridabad, India",
+    lover: "Kannu",
+    kannu: "Manager at astroscience and technologies and curretly she is 25 years old and looking for a guy like swarnim"
+  };
 
-  //   // Create speech recognition instance
-  //   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  //   recognitionRef.current = new SpeechRecognition();
-  //   recognitionRef.current.continuous = true;
-  //   recognitionRef.current.interimResults = true;
-  //   recognitionRef.current.lang = 'en-US';
+  const fetchAIResponse = async (question) => {
+    try {
+      // Show loading state
+      setAiResponse("Searching for answer...");
 
-  //   // Event handlers
-  //   recognitionRef.current.onstart = () => {
-  //     setIsListening(true);
-  //     setJarvisText("Listening...");
-  //   };
+      // Convert question to lowercase for easier matching
+      const lowerQuestion = question.toLowerCase();
 
-  //   recognitionRef.current.onresult = (event) => {
-  //     let interimTranscript = '';
-  //     let finalTranscript = '';
+      // Handle personal questions first
+      if (
+        lowerQuestion.includes("your name") ||
+        lowerQuestion.includes("who are you")
+      ) {
+        const answer = `My name is ${personalInfo.name}.`;
+        setAiResponse(answer);
+        speakText(answer);
+        return;
+      }
 
-  //     for (let i = event.resultIndex; i < event.results.length; i++) {
-  //       const transcript = event.results[i][0].transcript;
-  //       if (event.results[i].isFinal) {
-  //         finalTranscript += transcript;
-  //       } else {
-  //         interimTranscript += transcript;
-  //       }
-  //     }
+      // Handle personal questions first
+      if (
+        lowerQuestion.includes("your lover") ||
+        lowerQuestion.includes("who loves swarnim")
+      ) {
+        const answer = `${personalInfo.lover}.`;
+        setAiResponse(answer);
+        speakText(answer);
+        return;
+      }
 
-  //     setRecognizedText(finalTranscript || interimTranscript);
+            // Handle personal questions first
+            if (
+              lowerQuestion.includes("who is kannu") ||
+              lowerQuestion.includes("who is kryshna rajput")
+            ) {
+              const answer = `She is ${personalInfo.kannu}.`;
+              setAiResponse(answer);
+              speakText(answer);
+              return;
+            }
 
-  //     // Update JARVIS text with what we heard
-  //     if (finalTranscript) {
-  //       setJarvisText(finalTranscript);
-  //     }
-  //   };
+      if (
+        lowerQuestion.includes("who made you") ||
+        lowerQuestion.includes("who created you") ||
+        lowerQuestion.includes("who is your father")
+      ) {
+        const answer = `I was created by ${personalInfo.creator}.`;
+        setAiResponse(answer);
+        speakText(answer);
+        return;
+      }
 
-  //   recognitionRef.current.onerror = (event) => {
-  //     console.error("Speech recognition error", event.error);
-  //     setIsListening(false);
-  //     setJarvisText("Error occurred");
-  //     setTimeout(() => setJarvisText("JARVIS"), 2000);
-  //   };
+      if (
+        lowerQuestion.includes("where do you live") ||
+        lowerQuestion.includes("your location")
+      ) {
+        const answer = `I live in ${personalInfo.location}.`;
+        setAiResponse(answer);
+        speakText(answer);
+        return;
+      }
 
-  //   recognitionRef.current.onend = () => {
-  //     setIsListening(false);
-  //     if (jarvisText === "Listening...") {
-  //       setJarvisText("JARVIS");
-  //     }
-  //   };
+      // For non-personal questions, call the API
+      const res = await fetch(`${API_BASE_URL}/api/ask`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question }),
+      });
 
-  //   return () => {
-  //     if (recognitionRef.current) {
-  //       recognitionRef.current.stop();
-  //     }
-  //   };
-  // }, []);
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
 
+      const data = await res.json();
+
+      // Process answer
+      let finalAnswer = data.answer;
+      if (data.source) {
+        finalAnswer += `\n\n(Source: ${data.source})`;
+      }
+
+      setAiResponse(finalAnswer);
+      speakText(data.answer); // Speak without source info
+    } catch (err) {
+      console.error("Fetch error:", err);
+      const errorMsg = err.message.includes("500")
+        ? "Server is having issues. Try again later."
+        : "Couldn't connect to the server.";
+
+      setAiResponse(errorMsg);
+      speakText(errorMsg);
+    }
+  };
+
+  // Speak text aloud
+  const speakText = (text) => {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel(); // stop any ongoing speech
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "en-IN";
+    utterance.rate = 1;
+    utterance.pitch = 1;
+    window.speechSynthesis.speak(utterance);
+  };
+
+  // Speech recognition setup
   useEffect(() => {
-    // Check if browser supports the Web Speech API
     if (
       !("webkitSpeechRecognition" in window) &&
       !("SpeechRecognition" in window)
@@ -88,7 +140,6 @@ const HomePage = () => {
     recognitionRef.current.interimResults = true;
     recognitionRef.current.lang = "en-US";
 
-    // Local copy to prevent stale closure
     let localJarvisText = jarvisText;
 
     recognitionRef.current.onstart = () => {
@@ -116,6 +167,7 @@ const HomePage = () => {
       if (finalTranscript) {
         setJarvisText(finalTranscript);
         localJarvisText = finalTranscript;
+        fetchAIResponse(finalTranscript);
       }
     };
 
@@ -138,14 +190,15 @@ const HomePage = () => {
         recognitionRef.current.stop();
       }
     };
-  }, []); // keep dependency array empty
+  }, []);
 
-  // Toggle listening state
+  // Toggle listening
   const toggleListening = () => {
     if (isListening) {
       recognitionRef.current.stop();
     } else {
       setRecognizedText("");
+      setAiResponse("");
       try {
         recognitionRef.current.start();
       } catch (error) {
@@ -154,10 +207,9 @@ const HomePage = () => {
     }
   };
 
-  // Particle animation effect (same as before)
+  // Particle animation
   useEffect(() => {
     if (!particlesRef.current) return;
-
     const colors = ["#6366f1", "#8b5cf6", "#a855f7", "#d946ef"];
     const particleCount = 30;
 
@@ -206,17 +258,13 @@ const HomePage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-900 overflow-hidden relative">
-      {/* Animated background particles */}
       <div
         ref={particlesRef}
         className="absolute inset-0 overflow-hidden pointer-events-none"
       />
-
-      {/* Glowing orb decoration */}
       <div className="absolute -left-20 -top-20 w-64 h-64 rounded-full bg-purple-600 opacity-20 filter blur-3xl" />
       <div className="absolute -right-20 -bottom-20 w-64 h-64 rounded-full bg-indigo-600 opacity-20 filter blur-3xl" />
 
-      {/* Main container */}
       <div
         className="cursor-pointer text-center"
         onClick={toggleListening}
@@ -237,10 +285,18 @@ const HomePage = () => {
             ? "Click to speak"
             : "Click here to speak"}
         </p>
+
         {recognizedText && (
           <div className="mt-4 p-3 bg-gray-800 rounded-lg max-w-md mx-auto">
             <p className="text-gray-300 text-sm">I heard:</p>
             <p className="text-indigo-200">{recognizedText}</p>
+          </div>
+        )}
+
+        {aiResponse && (
+          <div className="mt-4 p-3 bg-gray-700 rounded-lg max-w-md mx-auto">
+            <p className="text-gray-300 text-sm">JARVIS says:</p>
+            <p className="text-green-200">{aiResponse}</p>
           </div>
         )}
       </div>
